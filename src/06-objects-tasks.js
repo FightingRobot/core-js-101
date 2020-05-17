@@ -121,32 +121,68 @@ function fromJSON(proto, json) {
  */
 
 const cssSelectorBuilder = {
-  element(/* value */) {
-    throw new Error('Not implemented');
+  selector: '',
+
+  sameSelectorsError() {
+    throw new Error('Element, id and pseudo-element should not occur more then one time inside the selector');
   },
 
-  id(/* value */) {
-    throw new Error('Not implemented');
+  wrongOrderError() {
+    throw new Error('Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element');
   },
 
-  class(/* value */) {
-    throw new Error('Not implemented');
+  element(value) {
+    if (/#|\.|\[.*\]|:|::/.test(this.selector)) this.wrongOrderError();
+    if (/div|table/.test(this.selector)) this.sameSelectorsError();
+    const obj = Object.create(this);
+    obj.selector = this.selector + value;
+    return obj;
   },
 
-  attr(/* value */) {
-    throw new Error('Not implemented');
+  id(value) {
+    if (/\.|\[.*\]|:|::/.test(this.selector)) this.wrongOrderError();
+    if (/#/.test(this.selector)) this.sameSelectorsError();
+    const obj = Object.create(this);
+    obj.selector = `${this.selector}#${value}`;
+    return obj;
   },
 
-  pseudoClass(/* value */) {
-    throw new Error('Not implemented');
+  class(value) {
+    if (/\[.*\]|:|::/.test(this.selector)) this.wrongOrderError();
+    const obj = Object.create(this);
+    obj.selector = `${this.selector}.${value}`;
+    return obj;
   },
 
-  pseudoElement(/* value */) {
-    throw new Error('Not implemented');
+  attr(value) {
+    if (/:|::/.test(this.selector)) this.wrongOrderError();
+    const obj = Object.create(this);
+    obj.selector = `${this.selector}[${value}]`;
+    return obj;
   },
 
-  combine(/* selector1, combinator, selector2 */) {
-    throw new Error('Not implemented');
+  pseudoClass(value) {
+    if (/::/.test(this.selector)) this.wrongOrderError();
+    const obj = Object.create(this);
+    obj.selector = `${this.selector}:${value}`;
+    return obj;
+  },
+
+  pseudoElement(value) {
+    if (/::/.test(this.selector)) this.sameSelectorsError();
+    const obj = Object.create(this);
+    obj.selector = `${this.selector}::${value}`;
+    return obj;
+  },
+
+  combine(selector1, combinator, selector2) {
+    const obj = Object.create(this);
+    obj.selector = `${selector1.stringify()} ${combinator} ${selector2.stringify()}`;
+    return obj;
+  },
+
+  stringify() {
+    return this.selector;
   },
 };
 
